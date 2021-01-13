@@ -51,9 +51,11 @@ public class Pathfinding {
                     for (int j = i + 1; j < poi.size() - i; j++) {
                         NodeButton end = binarySearch(buttons, poi.get(j), gridSize, 0);
                         LinkedList<NodeButton> path = aStar(start, end, adjMatrix, buttons, heuristic);
-                        for (NodeButton node : path) {
-                            if(node.getBackground() != rightColor){
-                                node.setBackground(pathColor);
+                        if (path != null){
+                            for (NodeButton node : path) {
+                                if(node.getBackground() != rightColor){
+                                    node.setBackground(pathColor);
+                                }
                             }
                         }
                     }
@@ -247,7 +249,6 @@ public class Pathfinding {
                 button.reset();
             }
         }
-        System.err.println("START");
         //discovered nodes to check
         LinkedList<NodeButton> openQueue = new LinkedList<NodeButton>();
         openQueue.add(start);
@@ -284,13 +285,11 @@ public class Pathfinding {
                     neighbourNode.setPrevNode(currentNode);
                     neighbourNode.setPathValue(neighbourPathVal);
                     neighbourNode.setHeurPathValue(neighbourPathVal + heuristic(neighbourNode, end, heuristic));
-                    System.err.println("nodeID heurPathVal: " + neighbourNode.getNodeID() + " " + neighbourNode.getHeurPathValue());
 
                     if(openQueue.size() == 0){
                         openQueue.add(neighbourNode);
                     }
                     else if(!(openQueue.contains(neighbourNode))){
-                        System.err.println();
                         for (int i = 0; i < openQueue.size(); i++) {
                             //if the neighbours heuristic value + path value is greater than the current node then insert the neighbour in front of it
                             if(neighbourNode.getHeurPathValue() <= openQueue.get(i).getHeurPathValue()){
