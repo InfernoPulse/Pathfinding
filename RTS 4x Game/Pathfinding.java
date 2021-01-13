@@ -6,24 +6,18 @@ import java.awt.event.*;
 import java.util.LinkedList;
 
 /**TO DO
- * test the binary search
- * add attributes to NodeButton class so we can perform a* on it
- * add astar algorithm
- * 
- * to implement a star
- * need to get every neighbour for a given cell
- *      use adjacency matrix to find neighbouring cells with an edge
- *      need to get scores for the neightbours
- * need to have the score of every neighbour
+ * problem with manhattan distance
+ * possible problem with the adjacency matrix
  */
 
 public class Pathfinding {
-    final int gridSize = 10;
+    final int gridSize = 3;
     final int frameSize = 700;
 
     final Color defColor = Color.BLACK;
     final Color leftColor = Color.WHITE;
     final Color rightColor = Color.RED;
+    final Color pathColor = Color.GREEN;
 
     //true means there is an edge, false means no edge
     boolean[][] adjMatrix = new boolean[gridSize*gridSize][gridSize*gridSize];
@@ -47,8 +41,20 @@ public class Pathfinding {
             public void actionPerformed(ActionEvent e){
                 constuctAdjacenyMatrix(buttons);
                 findPOI(buttons);
-                outputPOI();
-                outputAdjacencyMatrix();
+                // outputPOI();
+                // outputAdjacencyMatrix();
+                for (int i = 0; i < poi.size(); i++) {
+                    NodeButton start = binarySearch(buttons, poi.get(i), gridSize, 0, gridSize, 0, true);
+                    for (int j = i + 1; j < poi.size() - i; j++) {
+                        NodeButton end = binarySearch(buttons, poi.get(j), gridSize, 0, gridSize, 0, true);
+                        LinkedList<NodeButton> path = aStar(start, end, adjMatrix, buttons);
+                        for (NodeButton node : path) {
+                            if(node.getBackground() != rightColor){
+                                node.setBackground(pathColor);
+                            }
+                        }
+                    }
+                }
             }
         });
 
@@ -95,7 +101,7 @@ public class Pathfinding {
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
                 //adding buttons and setting the background for each button
-                buttons[i][j] = new NodeButton(iterator);
+                buttons[i][j] = new NodeButton(iterator, i, j);
                 buttons[i][j].setBackground(defColor);
                 //if you click on a button it will alternate between black and the colour for that mouse click
                 buttons[i][j].addMouseListener(new MouseInputAdapter(){
@@ -259,11 +265,81 @@ public class Pathfinding {
             }
         }
 
-        //if there are no more buttons to search or if the unit of the nodeID exceeds that of all buttons then return null
-        
-
         return binarySearch(buttons, nodeID, outUpper, outLower, inUpper, inLower, inOuter);
+    }
 
+    public LinkedList<NodeButton> aStar(NodeButton start, NodeButton end, boolean[][] adjMatrix, NodeButton[][] buttons){
+        //discovered nodes to check
+        LinkedList<NodeButton> openQueue = new LinkedList<NodeButton>();
+        openQueue.add(start);
+
+        //cost to move to current node
+        start.setPathValue(0);
+
+        //total cost to move to a node
+        start.setHeurPathValue(manhattan(start, end));
+
+        while(openQueue.size() > 0){
+            NodeButton currentNode = openQueue.removeFirst();
+
+            if(currentNode.getNodeID() == end.getNodeID()){
+                return reconstructPath(currentNode);
+            }
+            LinkedList<Integer> neighbours = new LinkedList<Integer>();
+            for (int i = 0; i < adjMatrix.length; i++) {
+                //if the current node is an edge then 
+                if(adjMatrix[currentNode.getNodeID()][i]){
+                    neighbours.add(i);
+                }
+            }
+            for (Integer neighbour : neighbours) {
+                NodeButton neighbourNode = binarySearch(buttons, neighbour, gridSize, 0, gridSize, 0, true);
+                int neighbourPathVal = currentNode.getPathValue() + 1;
+
+                if(neighbourNode.getPathValue() == -1 || neighbourPathVal < neighbourNode.getPathValue()){
+                    neighbourNode.setPrevNode(currentNode);
+                    neighbourNode.setPathValue(neighbourPathVal);
+                    neighbourNode.setHeurPathValue(neighbourPathVal + manhattan(neighbourNode, end));
+                    System.err.println(neighbourNode.getNodeID() + " " + neighbourNode.getPathValue());
+
+                    if(openQueue.size() == 0){
+                        openQueue.add(neighbourNode);
+                    }
+                    else if(!(openQueue.contains(neighbourNode))){
+                        System.err.println();
+                        for (int i = 0; i < openQueue.size(); i++) {
+                            //if the neighbours heuristic value + path value is greater than the current node then insert the neighbour in front of it
+                            if(neighbourNode.getHeurPathValue() < openQueue.get(i).getHeurPathValue()){
+                                openQueue.add(i, neighbourNode);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            System.err.println("////");
+            System.err.println(currentNode.getNodeID());
+            for (NodeButton node : openQueue) {
+                System.err.println("\t" + node.getNodeID());
+            }
+            System.err.println("####");
+
+        }
+        return null;
+    }
+
+    public LinkedList<NodeButton> reconstructPath(NodeButton currentNode){
+        LinkedList<NodeButton> totalPath = new LinkedList<NodeButton>();
+        totalPath.add(currentNode);
+        while(currentNode.getPrevNode() != null){
+            currentNode = currentNode.getPrevNode();
+            totalPath.add(currentNode);
+        }
+        return totalPath;
+    }
+
+    public int manhattan(NodeButton node, NodeButton end){
+        return Math.abs(end.getI() - node.getI()) + Math.abs(end.getJ() - node.getJ());
     }
     
     public static void main(String[] args) {
